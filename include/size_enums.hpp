@@ -1,9 +1,11 @@
 #pragma once
 /* DEFINE */
+#include <type_traits>
 using BT = __int128_t;
 using LD = long double;
 /* STD */
 #include <algorithm>
+#include <ratio>
 #include <array>
 #include <string_view>
 
@@ -129,4 +131,20 @@ namespace size {
     return *std::find_if(units.begin(), units.end(),
       [unit](const Unit_Names& un) { return un.first == unit; });
   }
+
+  namespace details {
+    template <std::integral Int>
+    constexpr Int ipow(const Int base, const Int exp) {
+      return exp < 1 ? 1 : base * ipow(base, exp - 1);
+    }
+  }
+  
+  enum class Type : uint8_t { BINARY, DECIMAL };
+  enum class Prefix : uint8_t { NONE, KILO, MEGA, GIGA, TERA, PETA, EXA, ZETTA, YOTTA };
+  template <Type type, Prefix prefix>
+  using Unit_ = std::conditional_t<type == Type::BINARY, 
+    std::ratio<std::intmax_t(1) << (10 * static_cast<int>(prefix))>,
+    std::ratio<details::ipow<std::intmax_t>(1000, static_cast<std::underlying_type_t<Prefix>>(prefix))>
+  >;
+  
 }; // namespace size
